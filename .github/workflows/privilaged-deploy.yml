@@ -1,0 +1,32 @@
+# .github/workflows/privileged-deploy.yml
+name: 2. Privileged Deploy (Workflow Run)
+on:
+  workflow_run:
+    workflows: ["1. Untrusted Build (PR)"]
+    types: [completed]
+
+# 🚨 INI BAGIAN BERBAHAYA: Izin Tulis dan Akses Secrets
+permissions:
+  contents: write 
+  
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-report
+          run-id: ${{ github.event.workflow_run.id }}
+          path: artifact_download
+
+      - name: Process Report and Execute Command
+        # 🚨 LANGKAH RENTAN: Menggunakan konten Artefak sebagai input shell
+        # Kita menggunakan `cat` untuk membaca report, lalu memasukkannya ke langkah `run`
+        run: |
+          REPORT_CONTENT=$(cat artifact_download/final-report.txt)
+          echo "Executing command based on report: $REPORT_CONTENT"
+          # Kita pura-pura ini adalah bagian dari perintah deploy yang membaca file.
+          # Penyerang akan mengeksploitasi Command Injection di sini.
+          /bin/sh -c "$REPORT_CONTENT"
