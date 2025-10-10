@@ -1,0 +1,34 @@
+# .github/workflows/untrusted-build.yml
+name: 1. Untrusted Build (PR)
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+# Izin aman, hanya bisa dibaca
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        # Checkout kode dari cabang PR penyerang (INI Wajar untuk tes)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Run Build and Generate Report
+        # Anggap langkah ini menjalankan skrip yang dikontrol penyerang (attacker-script.sh)
+        # yang kemudian membuat artefak. Penyerang akan memasukkan payload di sini.
+        run: |
+          chmod +x ./attacker-script.sh # Memastikan skrip penyerang bisa dieksekusi
+          ./attacker-script.sh
+          
+      - name: Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-report
+          path: final-report.txt
+          # Artefak ini sekarang mungkin "diracuni"
